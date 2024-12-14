@@ -1,9 +1,13 @@
-# Runs the main program for the ramp robot. This program is responsible for reading the encoder value and adjusting the motor speed to keep the robot in place.
-
+import requests
 import time
+import json
 import RPi.GPIO as GPIO
+from flask import Flask, request, jsonify
+from threading import Thread
 
-# Constants
+# Configuration
+ROBOT_B_URL = "http://robot_b_address:5000"  # Replace with Robot B's API address
+INITIAL_SPEED = 50  # Starting speed for negotiation
 PWM_FREQ = 1000  # PWM frequency in Hz
 TUNING_FACTOR = 1.0  # Tuning factor for ramp angle adjustment
 Kp = 0.1  # Proportional gain, adjust as needed
@@ -17,6 +21,9 @@ RIGHT_IN4 = 11  # GPIO pin for IN4 (Right Motor)
 ENCODER_CLK = 38 # GPIO pin for encoder CLK (clock)
 ENCODER_DT = 36 # GPIO pin for encoder DT (data)
 ENCODER_SW = 40 # GPIO pin for encoder SW (switch)
+
+app = Flask(__name__)
+target_speed = 0
 
 def setup_gpio():
     """Setup GPIO pins and PWM."""
@@ -69,6 +76,78 @@ def encoder_callback(channel):
             counter -= 1
     clkLastState = clkState
 
+@app.route('/set_speed', methods=['POST'])
+def set_speed():
+    global target_speed
+    data = request.get_json()
+    target_speed = data.get('speed', 0)
+    return jsonify({"status": "success", "speed": target_speed})
+
+def propose_speed(speed):
+    """Send a proposed speed to Robot B."""
+    payload = {"type": "proposal", "speed": speed}
+    try:
+        response = requests.post(f"{ROBOT_B_URL}/negotiate", json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error proposing speed: {e}")
+        return {}
+
+def respond_to_proposal(response_type):
+    """Send a response (ok or no) to Robot B."""
+    payload = {"type": "response", "response": response_type}
+    try:
+        response = requests.post(f"{ROBOT_B_URL}/negotiate", json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error responding to proposal: {e}")
+        return {}
+
+def negotiate_speed():
+    speed = INITIAL_SPEED
+    agreed = False
+
+    print("Starting negotiation with Robot B...")
+
+    while not agreed:
+        try:
+            # Step 1: Propose a speed to Robot B
+            print(f"Proposing speed: {speed}")
+            response = propose_speed(speed)
+
+            # Step 2: Handle Robot B's response
+            if response.get("type") == "response":
+                if response.get("response") == "ok":
+                    print("Robot B agreed! Target speed:", speed)
+                    agreed = True
+                    target_speed = speed  # Set the agreed speed
+                elif response.get("response") == "no":
+                    print("Robot B disagreed. Adjusting speed...")
+                    speed += 10  # Adjust speed (you can choose a smarter logic here)
+                else:
+                    print("Unknown response from Robot B:", response)
+
+            elif response.get("type") == "proposal":
+                proposed_speed = response.get("speed")
+                print(f"Robot B proposed: {proposed_speed}")
+                if proposed_speed == speed:
+                    print("Agreeing to Robot B's proposal!")
+                    respond_to_proposal("ok")
+                    agreed = True
+                    target_speed = speed  # Set the agreed speed
+                else:
+                    print("Disagreeing with Robot B's proposal.")
+                    respond_to_proposal("no")
+                    speed = (speed + proposed_speed) // 2  # Adjust speed
+
+            time.sleep(1)  # Add a delay to avoid spamming
+
+        except Exception as e:
+            print("Unexpected error:", e)
+            break
+
 def main():
     setup_gpio()
     global counter, clkLastState
@@ -80,6 +159,14 @@ def main():
     # Setup event detection for encoder
     GPIO.add_event_detect(ENCODER_CLK, GPIO.BOTH, callback=encoder_callback, bouncetime=10)
 
+    # Start Flask server in a separate thread
+    flask_thread = Thread(target=app.run, kwargs={"port": 5001})
+    flask_thread.start()
+
+    # Start negotiation in a separate thread
+    negotiation_thread = Thread(target=negotiate_speed)
+    negotiation_thread.start()
+
     # Control loop
     try:
         while True:
@@ -87,7 +174,7 @@ def main():
             encoder_value = counter
             
             # Calculate error (we want encoder_value to be 0)
-            error = -encoder_value
+            error = target_speed - encoder_value
             
             # Calculate motor speed adjustment
             adjustment = Kp * error
