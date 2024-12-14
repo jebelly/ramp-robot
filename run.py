@@ -22,6 +22,7 @@ ENCODER_CLK = 38 # GPIO pin for encoder CLK (clock)
 ENCODER_DT = 36 # GPIO pin for encoder DT (data)
 ENCODER_SW = 40 # GPIO pin for encoder SW (switch)
 
+# Initialize Flask app
 app = Flask(__name__)
 target_speed = 0
 
@@ -61,11 +62,14 @@ def set_motor_speed(left_speed, right_speed):
     pwm_right_in3.ChangeDutyCycle(right_speed if right_speed >= 0 else 0)
     pwm_right_in4.ChangeDutyCycle(-right_speed if right_speed < 0 else 0)
 
-# Global variables for encoder
+# Global variables for encoder and PWM adjustments
 counter = 0
 clkLastState = GPIO.input(ENCODER_CLK)
+left_pwm_adjustment = 0
+right_pwm_adjustment = 0
 
 def encoder_callback(channel):
+    """Callback function to handle encoder state changes."""
     global counter, clkLastState
     clkState = GPIO.input(ENCODER_CLK)
     dtState = GPIO.input(ENCODER_DT)
@@ -78,10 +82,20 @@ def encoder_callback(channel):
 
 @app.route('/set_speed', methods=['POST'])
 def set_speed():
+    """Endpoint to set the target speed."""
     global target_speed
     data = request.get_json()
     target_speed = data.get('speed', 0)
     return jsonify({"status": "success", "speed": target_speed})
+
+@app.route('/set_pwm', methods=['POST'])
+def set_pwm():
+    """Endpoint to set PWM adjustments."""
+    global left_pwm_adjustment, right_pwm_adjustment
+    data = request.get_json()
+    left_pwm_adjustment = data.get('left_pwm', 0)
+    right_pwm_adjustment = data.get('right_pwm', 0)
+    return jsonify({"status": "success", "left_pwm": left_pwm_adjustment, "right_pwm": right_pwm_adjustment})
 
 def propose_speed(speed):
     """Send a proposed speed to Robot B."""
@@ -106,6 +120,7 @@ def respond_to_proposal(response_type):
         return {}
 
 def negotiate_speed():
+    """Negotiate speed with Robot B."""
     speed = INITIAL_SPEED
     agreed = False
 
@@ -149,6 +164,7 @@ def negotiate_speed():
             break
 
 def main():
+    """Main function to setup GPIO, start Flask server, and control loop."""
     setup_gpio()
     global counter, clkLastState
     clkLastState = GPIO.input(ENCODER_CLK)
@@ -179,8 +195,12 @@ def main():
             # Calculate motor speed adjustment
             adjustment = Kp * error
             
+            # Apply PWM adjustments
+            left_speed = adjustment + left_pwm_adjustment
+            right_speed = -adjustment + right_pwm_adjustment
+            
             # Set motor speed to correct the error
-            set_motor_speed(adjustment, -adjustment)
+            set_motor_speed(left_speed, right_speed)
             
             # Small delay to prevent excessive CPU usage
             time.sleep(0.1)
