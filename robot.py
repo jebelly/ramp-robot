@@ -17,10 +17,10 @@ RIGHT_IN4 = 11  # GPIO pin for IN4 (Right Motor)
 ENCODER_CLK = 38 # GPIO pin for encoder CLK (clock)
 ENCODER_DT = 36 # GPIO pin for encoder DT (data)
 ENCODER_SW = 40 # GPIO pin for encoder SW (switch)
+GPIO.setmode(GPIO.BOARD)
 
 def setup_gpio():
     """Setup GPIO pins and PWM."""
-    GPIO.setmode(GPIO.BOARD)
     GPIO.setup(LEFT_IN1, GPIO.OUT)
     GPIO.setup(LEFT_IN2, GPIO.OUT)
     GPIO.setup(RIGHT_IN3, GPIO.OUT)
