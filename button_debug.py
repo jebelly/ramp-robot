@@ -9,8 +9,8 @@ RIGHT_BUTTON_PIN = 32  # GPIO pin for right button
 GPIO.setmode(GPIO.BOARD)
 
 # Setup button pins
-GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 try:
     while True:
