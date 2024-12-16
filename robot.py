@@ -1,4 +1,3 @@
-# Runs the main program for the ramp robot. This program is responsible for reading the encoder value and adjusting the motor speed to keep the robot in place.
 
 import time
 import RPi.GPIO as GPIO
