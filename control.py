@@ -68,6 +68,10 @@ try:
         left_button_pressed = GPIO.input(LEFT_BUTTON_PIN)
         right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN)
 
+        # Debugging print statements for button inputs
+        print(f"Left button pressed: {left_button_pressed}")
+        print(f"Right button pressed: {right_button_pressed}")
+
         left_speed = TARGET_SPEED
         right_speed = TARGET_SPEED
 
