@@ -42,8 +42,8 @@ RIGHT_MOTOR_IN3 = 12  # GPIO pin for IN3 (Right Motor)
 RIGHT_MOTOR_IN4 = 11  # GPIO pin for IN4 (Right Motor)
 
 # Setup button pins
-GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # zero when pressed
+GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # zero when pressed
 
 # Setup motor pins
 GPIO.setup(LEFT_MOTOR_IN1, GPIO.OUT)
