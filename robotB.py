@@ -28,11 +28,12 @@ def send_target_speed(speed):
     url = f"http://10.243.91.238:5000/speed/{speed}"
     try:
         response = requests.post(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        return response
+        if response.status_code == 200:
+            print(f"Speed set to {speed}")
+        else:
+            print(f"Failed to set speed {speed}, status code: {response.status_code}")
     except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
-        return None
+        print(f"Error setting speed to {speed}: {e}")
 
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
