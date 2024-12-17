@@ -43,21 +43,20 @@ def set_motor_speed(left_speed, right_speed):
     # left_motor_pwm.ChangeDutyCycle(abs(left_speed))
     # right_motor_pwm.ChangeDutyCycle(abs(right_speed))
 
-@app.route('/start/<int:delay>', methods=['POST'])
-def start(delay):
+@app.route('/start', methods=['GET', 'POST'])
+def start():
     global start_signal
-    if 1 <= delay <= 10:
-        print(f"Received start request with delay: {delay}")
-        threading.Timer(delay, set_start_signal).start()
-        return jsonify({"status": "Robot A will start after delay"}), 200
-    else:
-        print(f"Invalid start delay: {delay}")
-        return jsonify({"error": "Invalid delay value"}), 400
-
-def set_start_signal():
-    global start_signal
-    start_signal = True
-    print("Start signal set to True")
+    if request.method == 'POST':
+        delay = request.args.get('delay', type=int)
+        if 1 <= delay <= 10:
+            print(f"Received start request with delay: {delay}")
+            threading.Timer(delay, set_start_signal).start()
+            return jsonify({"status": "Robot A will start after delay"}), 200
+        else:
+            print(f"Invalid start delay: {delay}")
+            return jsonify({"error": "Invalid delay value"}), 400
+    elif request.method == 'GET':
+        return jsonify({"start_signal": start_signal}), 200
 
 @app.route('/speed/<int:speed>', methods=['POST'])
 def speed(speed):
