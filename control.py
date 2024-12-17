@@ -65,19 +65,23 @@ def set_motor_speed(left_speed, right_speed):
     # left_motor_pwm.ChangeDutyCycle(abs(left_speed))
     # right_motor_pwm.ChangeDutyCycle(abs(right_speed))
 
-# Global variables to store the target speed and start signal
+# Global variables to store the target speed, start signal, and stop signal
 target_speed = 0
 start_signal = False
+stop_signal = False
 
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
     global start_signal
     if 1 <= delay <= 10:
-        time.sleep(delay)
-        start_signal = True
-        return jsonify({"status": "Robot A started"}), 200
+        threading.Timer(delay, set_start_signal).start()
+        return jsonify({"status": "Robot A will start after delay"}), 200
     else:
         return jsonify({"error": "Invalid delay value"}), 400
+
+def set_start_signal():
+    global start_signal
+    start_signal = True
 
 @app.route('/target/<int:speed>', methods=['POST'])
 def target(speed):
@@ -88,43 +92,40 @@ def target(speed):
     else:
         return jsonify({"error": "Invalid speed value"}), 400
 
-# Main control loop
-try:
-    TARGET_SPEED = 50  # Example target speed from Robot B
-    while True:
-        left_button_pressed = GPIO.input(LEFT_BUTTON_PIN)
-        right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN)
+@app.route('/stop', methods=['POST'])
+def stop():
+    global stop_signal
+    stop_signal = True
+    return jsonify({"status": "Robot A stopped"}), 200
 
-        # Debugging print statements for button inputs
-        print(f"Left button pressed: {left_button_pressed}")
-        print(f"Right button pressed: {right_button_pressed}")
+@app.route('/ready', methods=['GET'])
+def ready():
+    return jsonify({"status": "Robot A is ready"}), 200
 
-        left_speed = TARGET_SPEED
-        right_speed = TARGET_SPEED
+def control_loop():
+    global start_signal, stop_signal, target_speed
+    while not start_signal:
+        time.sleep(0.1)  # Wait for the start signal
 
-        if left_button_pressed and not right_button_pressed:
-            # Adjust speed based on left button press
-            left_speed -= 10  # Slow down left motor
-        elif right_button_pressed and not left_button_pressed:
-            # Adjust speed based on right button press
-            right_speed -= 10  # Slow down right motor
-        elif left_button_pressed and right_button_pressed:
-            # Adjust speed based on both buttons pressed
-            left_speed -= 5
-            right_speed -= 5
+    print("Begin autonomous operation for Robot A")
+    while not stop_signal:
+        left_button_pressed = GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW
+        right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW
 
-        set_motor_speed(left_speed, right_speed)
+        if left_button_pressed:
+            # Adjust speed based on button input
+            set_motor_speed(target_speed * 0.9, target_speed)  # Slow down left motor
+        elif right_button_pressed:
+            # Adjust speed based on button input
+            set_motor_speed(target_speed * 1.1, target_speed)  # Speed up left motor
+        else:
+            set_motor_speed(target_speed, target_speed)  # Set to target speed
 
-        # Print motor speeds for debugging
-        print(f"Left motor speed: {left_speed}, Right motor speed: {right_speed}")
+        time.sleep(0.1)  # Ensure control loop runs at a reasonable rate
 
-        time.sleep(0.1)
-
-except KeyboardInterrupt:
-    pass
-
-finally:
-    GPIO.cleanup()
+    # Stop the motors when stop signal is received
+    set_motor_speed(0, 0)
+    print("Robot A stopped")
 
 def run_server():
     app.run(host='0.0.0.0', port=5000)
@@ -135,13 +136,5 @@ if __name__ == "__main__":
     server_thread.start()
 
     # Start the control loop
-    try:
-        TARGET_SPEED = 50  # Example target speed from Robot B
-        while True:
-            left_button_pressed = GPIO.input(LEFT_BUTTON_PIN)
-            right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN)
-            # Your existing control logic here
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        GPIO.cleanup()
+    control_loop()
 
