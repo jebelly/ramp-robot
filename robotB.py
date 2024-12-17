@@ -26,14 +26,19 @@ def start_robot_a(delay):
 
 def send_target_speed(speed):
     url = f"http://10.243.91.238:5000/speed/{speed}"
-    try:
-        response = requests.post(url)
-        if response.status_code == 200:
-            print(f"Speed set to {speed}")
-        else:
-            print(f"Failed to set speed {speed}, status code: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        print(f"Error setting speed to {speed}: {e}")
+    retries = 5
+    for attempt in range(retries):
+        try:
+            response = requests.post(url)
+            if response.status_code == 200:
+                print(f"Speed set to {speed}")
+                return
+            else:
+                print(f"Failed to set speed {speed}, status code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error setting speed to {speed}: {e}")
+        time.sleep(1)  # Retry after 1 second
+    print(f"Failed to set speed {speed} after {retries} attempts")
 
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
