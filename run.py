@@ -62,17 +62,15 @@ def cleanup_gpio(signal, frame):
 # Register the signal handler
 signal.signal(signal.SIGINT, cleanup_gpio)
 
-def set_start_signal():
-    global start_signal
-    start_signal = True
-    print("Start signal set to True")
-
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
     global start_signal
     print(f"Received start signal with delay: {delay}")
-    time.sleep(delay)
-    set_start_signal()
+    for i in range(delay, 0, -1):
+        print(f"Starting in {i} seconds...")
+        time.sleep(1)
+    start_signal = True
+    print("Start signal set to True")
     return jsonify({"status": "ok"}), 200
 
 @app.route('/speed/<int:speed>', methods=['POST'])
