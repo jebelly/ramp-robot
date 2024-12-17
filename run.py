@@ -3,7 +3,6 @@ import time
 from flask import Flask, request, jsonify
 import threading
 import argparse
-import requests
 
 app = Flask(__name__)
 
@@ -43,63 +42,32 @@ def set_motor_speed(left_speed, right_speed):
     # left_motor_pwm.ChangeDutyCycle(abs(left_speed))
     # right_motor_pwm.ChangeDutyCycle(abs(right_speed))
 
-@app.route('/start', methods=['GET', 'POST'])
-def start():
+@app.route('/start/<int:delay>', methods=['POST'])
+def start(delay):
     global start_signal
-    if request.method == 'POST':
-        delay = request.args.get('delay', type=int)
-        if start_signal or stop_signal:
-            return jsonify({"status": "no"}), 200
-        if 1 <= delay <= 10:
-            print(f"Received start request with delay: {delay}")
-            threading.Timer(delay, set_start_signal).start()
-            return jsonify({"status": "ok"}), 200
-        else:
-            print(f"Invalid start delay: {delay}")
-            return jsonify({"status": "no"}), 400
-    elif request.method == 'GET':
-        return jsonify({"start_signal": start_signal}), 200
+    if 1 <= delay <= 10:
+        print(f"Received start request with delay: {delay}")
+        threading.Timer(delay, set_start_signal).start()
+        return jsonify({"status": "ok"}), 200
+    else:
+        print(f"Invalid start delay: {delay}")
+        return jsonify({"error": "Invalid delay value"}), 400
+
+def set_start_signal():
+    global start_signal
+    start_signal = True
+    print("Start signal set to True")
 
 @app.route('/speed/<int:speed>', methods=['POST'])
 def speed(speed):
     global target_speed
-    if start_signal and not stop_signal:
-        if 1 <= speed <= 1000:
-            target_speed = speed
-            print(f"Received target speed: {target_speed}")
-            return jsonify({"status": "ok"}), 200
-        else:
-            print(f"Invalid target speed: {speed}")
-            return jsonify({"status": "no"}), 400
+    if 1 <= speed <= 1000:
+        target_speed = speed
+        print(f"Received target speed: {target_speed}")
+        return jsonify({"status": "ok"}), 200
     else:
-        return jsonify({"status": "no"}), 200
-
-def check_robot_b_start_signal():
-    url = f"http://{robot_b_ip}:5000/start"
-    while True:
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                print("Received start signal from Robot B")
-                return True
-        except requests.exceptions.RequestException as e:
-            print(f"Error checking Robot B start signal: {e}")
-        time.sleep(1)  # Retry every second
-
-def receive_speed_from_robot_b():
-    url = f"http://{robot_b_ip}:5000/speed"
-    while True:
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                speed = response.json().get('speed')
-                if speed:
-                    global target_speed
-                    target_speed = speed
-                    print(f"Received speed from Robot B: {target_speed}")
-        except requests.exceptions.RequestException as e:
-            print(f"Error receiving speed from Robot B: {e}")
-        time.sleep(1)  # Retry every second
+        print(f"Invalid target speed: {speed}")
+        return jsonify({"error": "Invalid speed value"}), 400
 
 def control_loop():
     global start_signal, stop_signal, target_speed, on_left_ramp
@@ -164,11 +132,5 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
-    # Start receiving speed from Robot B
-    speed_thread = threading.Thread(target=receive_speed_from_robot_b)
-    speed_thread.start()
-
-    # Check for start signal from Robot B
-    if check_robot_b_start_signal():
-        # Start the control loop
-        control_loop()
+    # Start the control loop
+    control_loop()

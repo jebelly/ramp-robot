@@ -28,33 +28,42 @@ def send_target_speed(speed):
     url = f"http://10.243.91.238:5000/speed/{speed}"
     try:
         response = requests.post(url)
-        if response.status_code == 200 and response.json().get("status") == "ok":
-            return response
+        if response.status_code == 200:
+            return True
         else:
-            print(f"Failed to set speed {speed}, status: {response.json().get('status')}")
-            return None
+            print(f"Failed to set speed {speed}, status: {response.status_code}")
+            return False
     except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
-        return None
+        print(f"Error sending speed to Robot A: {e}")
+        return False
 
-@app.route('/start/<int:delay>', methods=['POST'])
-def start(delay):
-    global start_signal
-    if 1 <= delay <= 10:
-        threading.Timer(delay, set_start_signal).start()
-        return jsonify({"status": "Robot B will start after delay"}), 200
-    else:
-        return jsonify({"error": "Invalid delay value"}), 400
-
-def set_start_signal():
+@app.route('/start', methods=['POST'])
+def receive_start_signal():
     global start_signal
     start_signal = True
+    return jsonify({"status": "ok"}), 200
 
-def autonomous_operation(delay):
-    global current_speed, start_signal
-    time.sleep(delay)
-    print("Begin autonomous operation for Robot B")
-    
+@app.route('/speed/<int:speed>', methods=['POST'])
+def receive_speed(speed):
+    global current_speed
+    current_speed = speed
+    return jsonify({"status": "ok"}), 200
+
+def run_server():
+    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    # Start the Flask server in a separate thread
+    server_thread = threading.Thread(target=run_server)
+    server_thread.start()
+
+    # Example delay value
+    delay = 5
+    if start_robot_a(delay):
+        print("Robot A started successfully")
+    else:
+        print("Failed to start Robot A")
+
     # Wait for the start signal
     while not start_signal:
         time.sleep(0.1)
@@ -70,25 +79,4 @@ def autonomous_operation(delay):
                 current_speed = speed
             else:
                 print(f"Failed to set speed {speed}")
-        
-        time.sleep(2)  # Ensure requests are not sent more frequently than every 2 seconds
-
-def run_server():
-    app.run(host='0.0.0.0', port=5000)
-
-if __name__ == "__main__":
-    # Start the Flask server in a separate thread
-    server_thread = threading.Thread(target=run_server)
-    server_thread.start()
-
-    # Keep trying to send start signal to Robot A until it is accepted
-    while not start_robot_a(5):
-        print("Retrying to send start signal to Robot A...")
         time.sleep(1)
-
-    # Wait for the start signal before starting autonomous operation
-    while not start_signal:
-        time.sleep(0.1)
-
-    # Start autonomous operation with a delay of 5 seconds
-    autonomous_operation(5)
