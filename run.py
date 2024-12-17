@@ -1,8 +1,10 @@
 import RPi.GPIO as GPIO
+import signal
+import sys
 import time
-from flask import Flask, request, jsonify
 import threading
 import argparse
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -32,26 +34,33 @@ GPIO.setup(LEFT_MOTOR_IN2, GPIO.OUT)
 GPIO.setup(RIGHT_MOTOR_IN3, GPIO.OUT)
 GPIO.setup(RIGHT_MOTOR_IN4, GPIO.OUT)
 
-# Function to set motor direction and speed
+# Initialize PWM
+left_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN1, 1000)  # 1kHz frequency
+right_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN3, 1000)  # 1kHz frequency
+left_motor_pwm.start(0)
+right_motor_pwm.start(0)
+
 def set_motor_speed(left_speed, right_speed):
+    # Scale the speed values to 0-50%
+    left_duty_cycle = min(max(left_speed / 20, 0), 50)
+    right_duty_cycle = min(max(right_speed / 20, 0), 50)
+    
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
     GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
     GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if right_speed > 0 else GPIO.LOW)
     GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW if right_speed > 0 else GPIO.HIGH)
-    # Assuming speed is controlled by duty cycle, adjust accordingly
-    # left_motor_pwm.ChangeDutyCycle(abs(left_speed))
-    # right_motor_pwm.ChangeDutyCycle(abs(right_speed))
+    
+    left_motor_pwm.ChangeDutyCycle(left_duty_cycle)
+    right_motor_pwm.ChangeDutyCycle(right_duty_cycle)
 
-@app.route('/start/<int:delay>', methods=['POST'])
-def start(delay):
-    global start_signal
-    if 1 <= delay <= 10:
-        print(f"Received start request with delay: {delay}")
-        threading.Timer(delay, set_start_signal).start()
-        return jsonify({"status": "ok"}), 200
-    else:
-        print(f"Invalid start delay: {delay}")
-        return jsonify({"error": "Invalid delay value"}), 400
+def cleanup_gpio(signal, frame):
+    print("Cleaning up GPIO and stopping motors")
+    set_motor_speed(0, 0)
+    GPIO.cleanup()
+    sys.exit(0)
+
+# Register the signal handler
+signal.signal(signal.SIGINT, cleanup_gpio)
 
 def set_start_signal():
     global start_signal
@@ -70,46 +79,29 @@ def speed(speed):
         return jsonify({"error": "Invalid speed value"}), 400
 
 def control_loop():
-    global start_signal, stop_signal, target_speed, on_left_ramp
-    print("Entering control loop")
-    while not start_signal:
-        time.sleep(0.1)  # Wait for the start signal
+    global target_speed
+    current_speed = 0
+    acceleration = 10  # Adjust this value to control the acceleration rate
 
-    print("Begin autonomous operation for Robot A")
-    while not stop_signal:
-        left_button_pressed = GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW
-        right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW
+    while True:
+        if start_signal:
+            if current_speed < target_speed:
+                current_speed += acceleration
+                if current_speed > target_speed:
+                    current_speed = target_speed
+            elif current_speed > target_speed:
+                current_speed -= acceleration
+                if current_speed < target_speed:
+                    current_speed = target_speed
 
-        if on_left_ramp:
-            if left_button_pressed:
-                # Adjust speed based on button input
-                set_motor_speed(target_speed * 0.9, target_speed)  # Slow down left motor
-                print("Left button pressed, slowing down left motor")
-            elif right_button_pressed:
-                # Adjust speed based on button input
-                set_motor_speed(target_speed * 1.1, target_speed)  # Speed up left motor
-                print("Right button pressed, speeding up left motor")
-            else:
-                set_motor_speed(target_speed, target_speed)  # Set to target speed
-                print("No button pressed, setting to target speed")
+            set_motor_speed(current_speed, current_speed * 1.1)  # Speed up right motor
+            print(f"Setting motor speed to {current_speed}")
         else:
-            if right_button_pressed:
-                # Adjust speed based on button input
-                set_motor_speed(target_speed * 0.9, target_speed)  # Slow down right motor
-                print("Right button pressed, slowing down right motor")
-            elif left_button_pressed:
-                # Adjust speed based on button input
-                set_motor_speed(target_speed, target_speed * 1.1)  # Speed up right motor
-                print("Left button pressed, speeding up right motor")
-            else:
-                set_motor_speed(target_speed, target_speed)  # Set to target speed
-                print("No button pressed, setting to target speed")
+            set_motor_speed(0, 0)
+            print("Robot A stopped")
+            break
 
         time.sleep(0.1)  # Ensure control loop runs at a reasonable rate
-
-    # Stop the motors when stop signal is received
-    set_motor_speed(0, 0)
-    print("Robot A stopped")
 
 def run_server():
     print("Starting Flask server")
@@ -128,9 +120,9 @@ if __name__ == "__main__":
 
     print(f"Running with side: {args.side}, IP: {args.ip}")
 
-    # Start the Flask server in a separate thread
-    server_thread = threading.Thread(target=run_server)
-    server_thread.start()
+    # Start the control loop in a separate thread
+    control_thread = threading.Thread(target=control_loop)
+    control_thread.start()
 
-    # Start the control loop
-    control_loop()
+    # Run the Flask server
+    run_server()
