@@ -67,6 +67,14 @@ def set_start_signal():
     start_signal = True
     print("Start signal set to True")
 
+@app.route('/start/<int:delay>', methods=['POST'])
+def start(delay):
+    global start_signal
+    print(f"Received start signal with delay: {delay}")
+    time.sleep(delay)
+    set_start_signal()
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/speed/<int:speed>', methods=['POST'])
 def speed(speed):
     global target_speed
