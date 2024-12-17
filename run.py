@@ -34,7 +34,7 @@ GPIO.setup(LEFT_MOTOR_IN2, GPIO.OUT)
 GPIO.setup(RIGHT_MOTOR_IN3, GPIO.OUT)
 GPIO.setup(RIGHT_MOTOR_IN4, GPIO.OUT)
 
-# Initialize PWM
+# Initialize PWM on both IN1 and IN3 pins for speed control
 left_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN1, 1000)  # 1kHz frequency
 right_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN3, 1000)  # 1kHz frequency
 left_motor_pwm.start(0)
@@ -45,10 +45,10 @@ def set_motor_speed(left_speed, right_speed):
     left_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)
     right_duty_cycle = min(max(abs(right_speed) / 10, 0), 100)
     
-    GPIO.output(LEFT_MOTOR_IN1, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
-    GPIO.output(LEFT_MOTOR_IN2, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
-    GPIO.output(RIGHT_MOTOR_IN3, GPIO.LOW if right_speed > 0 else GPIO.HIGH)
-    GPIO.output(RIGHT_MOTOR_IN4, GPIO.HIGH if right_speed > 0 else GPIO.LOW)
+    GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
+    GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
+    GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if right_speed > 0 else GPIO.LOW)
+    GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW if right_speed > 0 else GPIO.HIGH)
     
     left_motor_pwm.ChangeDutyCycle(left_duty_cycle)
     right_motor_pwm.ChangeDutyCycle(right_duty_cycle)
