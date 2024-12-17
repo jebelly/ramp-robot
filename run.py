@@ -92,21 +92,23 @@ def control_loop():
     acceleration = 10  # Adjust this value to control the acceleration rate
 
     while True:
-        if start_signal:
-            if current_speed < target_speed:
-                current_speed += acceleration
-                if current_speed > target_speed:
-                    current_speed = target_speed
-            elif current_speed > target_speed:
-                current_speed -= acceleration
-                if current_speed < target_speed:
-                    current_speed = target_speed
-
-            set_motor_speed(current_speed, current_speed)  # Set both motors to the same speed
-            print(f"Setting motor speed to {current_speed}")
-        else:
+        if not start_signal:
             set_motor_speed(0, 0)
-            print("Robot A stopped")
+            print("Waiting for start signal...")
+            time.sleep(0.1)
+            continue
+
+        if current_speed < target_speed:
+            current_speed += acceleration
+            if current_speed > target_speed:
+                current_speed = target_speed
+        elif current_speed > target_speed:
+            current_speed -= acceleration
+            if current_speed < target_speed:
+                current_speed = target_speed
+
+        set_motor_speed(current_speed, current_speed)  # Set both motors to the same speed
+        print(f"Setting motor speed to {current_speed}")
 
         time.sleep(0.1)  # Ensure control loop runs at a reasonable rate
 
