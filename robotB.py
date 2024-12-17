@@ -61,7 +61,7 @@ def autonomous_operation(delay):
             print("Speed set successfully")
         else:
             print("Failed to set speed")
-        time.sleep(0.1)  # Ensure requests are not sent more frequently than 10 Hz
+        time.sleep(0.5)  # Ensure requests are not sent more frequently than 10 Hz
 
 def check_robot_a_ready():
     url = "http://10.243.91.238:5000/ready"
