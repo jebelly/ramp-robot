@@ -107,7 +107,6 @@ def control_loop():
         else:
             set_motor_speed(0, 0)
             print("Robot A stopped")
-            break
 
         time.sleep(0.1)  # Ensure control loop runs at a reasonable rate
 
@@ -130,6 +129,7 @@ if __name__ == "__main__":
 
     # Start the control loop in a separate thread
     control_thread = threading.Thread(target=control_loop)
+    control_thread.daemon = True  # Ensure the thread exits when the main program exits
     control_thread.start()
 
     # Run the Flask server
