@@ -38,15 +38,13 @@ GPIO.setup(RIGHT_MOTOR_IN4, GPIO.OUT)
 left_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN1, 1000)  # 1kHz frequency
 right_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN3, 1000)  # 1kHz frequency
 
-
-# Set the other two unused IN pins to LOW
-GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW)
-GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW)
-
 # Start PWM with 0 duty cycle to ensure motors are off
 left_motor_pwm.start(0)
 right_motor_pwm.start(0)
 
+# Set the other two unused IN pins to LOW
+GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW)
+GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW)
 
 def set_motor_speed(left_speed, right_speed):
     # Scale the speed values to 0-100%
