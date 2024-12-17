@@ -78,10 +78,15 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
-    # Keep trying to send start signal to Robot A until it is accepted
-    while not start_robot_a(5):
-        print("Retrying to send start signal to Robot A...")
-        time.sleep(1)
+    
+
+    # Wait for the start signal before starting autonomous operation
+    while not start_signal:
+        # Keep trying to send start signal to Robot A until it is accepted
+        while not start_robot_a(5):
+            print("Retrying to send start signal to Robot A...")
+            time.sleep(1)
+        time.sleep(0.1)
 
     # Start autonomous operation with a delay of 5 seconds
     autonomous_operation(5)
