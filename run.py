@@ -59,22 +59,17 @@ def set_motor_speed(left_speed, right_speed):
     left_motor_pwm.ChangeDutyCycle(left_duty_cycle)
     right_motor_pwm.ChangeDutyCycle(right_duty_cycle)
 
-def button_callback(channel):
-    global target_speed
-    if channel == LEFT_BUTTON_PIN:
+def check_buttons():
+    if GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW:
         print("Left button pressed! Adjusting speed to straighten tube.")
         set_motor_speed(target_speed - 200, target_speed + 200)
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
-    elif channel == RIGHT_BUTTON_PIN:
+    elif GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW:
         print("Right button pressed! Adjusting speed to straighten tube.")
         set_motor_speed(target_speed + 200, target_speed - 200)
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
-
-# Register button press callbacks
-GPIO.add_event_detect(LEFT_BUTTON_PIN, GPIO.FALLING, callback=button_callback, bouncetime=300)
-GPIO.add_event_detect(RIGHT_BUTTON_PIN, GPIO.FALLING, callback=button_callback, bouncetime=300)
 
 def cleanup_gpio(signal, frame):
     print("Cleaning up GPIO and stopping motors")
@@ -120,6 +115,8 @@ def control_loop():
                 print("Motors stopped. Waiting for start signal...")
             time.sleep(0.1)
             continue
+
+        check_buttons()  # Check button states in the control loop
 
         if current_speed < target_speed:
             current_speed += acceleration
