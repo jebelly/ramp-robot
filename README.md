@@ -9,12 +9,18 @@ Steps:
 4. python3 run.py
 5. 
 
+ssh pi@10.243.91.238
+cd ramp-robot
+git pull origin main
+source ~/ramp-robot-venv/bin/activate
+python3 left.py OR right.py depending on which ramp
 
 
 Robot B Steps:
-
-1. 
-2. 
+ssh pi@10.243.91.50
+cd ramp-robot
+git pull origin main
+source ~/ramp-robot-venv/bin/activate
 
 
 Robot A:
@@ -23,6 +29,6 @@ Robot A:
     port:   5000
 
 Robot B:
-    user:   pi@@10.243.91.50
+    user:   pi@10.243.91.50
     password: -----
     port:   5000
