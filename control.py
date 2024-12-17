@@ -1,5 +1,9 @@
 import RPi.GPIO as GPIO
 import time
+from flask import Flask, request, jsonify
+import threading
+
+app = Flask(__name__)
 
 #  Main Control Loop for Robot A (our robot)
 
@@ -61,6 +65,29 @@ def set_motor_speed(left_speed, right_speed):
     # left_motor_pwm.ChangeDutyCycle(abs(left_speed))
     # right_motor_pwm.ChangeDutyCycle(abs(right_speed))
 
+# Global variables to store the target speed and start signal
+target_speed = 0
+start_signal = False
+
+@app.route('/start/<int:delay>', methods=['POST'])
+def start(delay):
+    global start_signal
+    if 1 <= delay <= 10:
+        time.sleep(delay)
+        start_signal = True
+        return jsonify({"status": "Robot A started"}), 200
+    else:
+        return jsonify({"error": "Invalid delay value"}), 400
+
+@app.route('/target/<int:speed>', methods=['POST'])
+def target(speed):
+    global target_speed
+    if 1 <= speed <= 1000:
+        target_speed = speed
+        return jsonify({"status": "Speed set"}), 200
+    else:
+        return jsonify({"error": "Invalid speed value"}), 400
+
 # Main control loop
 try:
     TARGET_SPEED = 50  # Example target speed from Robot B
@@ -98,4 +125,23 @@ except KeyboardInterrupt:
 
 finally:
     GPIO.cleanup()
+
+def run_server():
+    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    # Start the Flask server in a separate thread
+    server_thread = threading.Thread(target=run_server)
+    server_thread.start()
+
+    # Start the control loop
+    try:
+        TARGET_SPEED = 50  # Example target speed from Robot B
+        while True:
+            left_button_pressed = GPIO.input(LEFT_BUTTON_PIN)
+            right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN)
+            # Your existing control logic here
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        GPIO.cleanup()
 
