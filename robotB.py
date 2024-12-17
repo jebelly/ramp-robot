@@ -7,7 +7,6 @@ import random
 app = Flask(__name__)
 
 # Global variables to store the target speed and start signal
-target_speed = None
 current_speed = None  # Variable to keep track of the current speed
 start_signal = False
 
@@ -44,40 +43,13 @@ def set_start_signal():
     global start_signal
     start_signal = True
 
-@app.route('/target/<int:speed>', methods=['POST'])
-def target(speed):
-    global target_speed
-    if 1 <= speed <= 1000:
-        target_speed = speed
-        print(f"Received speed request: {target_speed}")
-        return jsonify({"status": "Speed received"}), 200
-    else:
-        return jsonify({"error": "Invalid speed value"}), 400
-
-@app.route('/receive_message', methods=['POST'])
-def receive_message():
-    data = request.json
-    print(f"Received message: {data}")
-    return jsonify({"status": "Message received"}), 200
-
-@app.route('/set_speed', methods=['POST'])
-def set_speed():
-    global target_speed
-    data = request.json
-    target_speed = data.get('speed')
-    print(f"Received speed request: {target_speed}")
-    return jsonify({"status": "Speed received"}), 200
-
 def autonomous_operation(delay):
     global current_speed
     time.sleep(delay)
     print("Begin autonomous operation for Robot B")
     while True:
-        if target_speed is not None:
-            speed = target_speed
-        else:
-            # Generate a random speed value between 1 and 1000
-            speed = random.randint(1, 1000)
+        # Generate a random speed value between 1 and 1000
+        speed = random.randint(1, 1000)
         
         if speed != current_speed:
             response = send_target_speed(speed)

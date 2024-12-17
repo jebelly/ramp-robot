@@ -3,6 +3,7 @@ import time
 from flask import Flask, request, jsonify
 import threading
 import argparse
+import requests
 
 app = Flask(__name__)
 
@@ -11,7 +12,7 @@ target_speed = 0
 start_signal = False
 stop_signal = False
 on_left_ramp = None  # Variable to store the side of the ramp
-robot_a_ip = None  # Variable to store the IP address of Robot A
+robot_b_ip = None  # Variable to store the IP address of Robot B
 
 # Define GPIO pins
 LEFT_BUTTON_PIN = 36  # GPIO pin for left button
@@ -46,36 +47,56 @@ def set_motor_speed(left_speed, right_speed):
 def start(delay):
     global start_signal
     if 1 <= delay <= 10:
+        print(f"Received start request with delay: {delay}")
         threading.Timer(delay, set_start_signal).start()
         return jsonify({"status": "Robot A will start after delay"}), 200
     else:
+        print(f"Invalid start delay: {delay}")
         return jsonify({"error": "Invalid delay value"}), 400
 
 def set_start_signal():
     global start_signal
     start_signal = True
+    print("Start signal set to True")
 
 @app.route('/target/<int:speed>', methods=['POST'])
 def target(speed):
     global target_speed
     if 1 <= speed <= 1000:
         target_speed = speed
+        print(f"Received target speed: {target_speed}")
         return jsonify({"status": "Speed set"}), 200
     else:
+        print(f"Invalid target speed: {speed}")
         return jsonify({"error": "Invalid speed value"}), 400
 
 @app.route('/stop', methods=['POST'])
 def stop():
     global stop_signal
     stop_signal = True
+    print("Stop signal set to True")
     return jsonify({"status": "Robot A stopped"}), 200
 
 @app.route('/ready', methods=['GET'])
 def ready():
+    print("Received ready check")
     return jsonify({"status": "Robot A is ready"}), 200
+
+def check_robot_b_start_signal():
+    url = f"http://{robot_b_ip}:5000/start"
+    while True:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                print("Received start signal from Robot B")
+                return True
+        except requests.exceptions.RequestException as e:
+            print(f"Error checking Robot B start signal: {e}")
+        time.sleep(1)  # Retry every second
 
 def control_loop():
     global start_signal, stop_signal, target_speed, on_left_ramp
+    print("Entering control loop")
     while not start_signal:
         time.sleep(0.1)  # Wait for the start signal
 
@@ -88,20 +109,26 @@ def control_loop():
             if left_button_pressed:
                 # Adjust speed based on button input
                 set_motor_speed(target_speed * 0.9, target_speed)  # Slow down left motor
+                print("Left button pressed, slowing down left motor")
             elif right_button_pressed:
                 # Adjust speed based on button input
                 set_motor_speed(target_speed * 1.1, target_speed)  # Speed up left motor
+                print("Right button pressed, speeding up left motor")
             else:
                 set_motor_speed(target_speed, target_speed)  # Set to target speed
+                print("No button pressed, setting to target speed")
         else:
             if right_button_pressed:
                 # Adjust speed based on button input
                 set_motor_speed(target_speed * 0.9, target_speed)  # Slow down right motor
+                print("Right button pressed, slowing down right motor")
             elif left_button_pressed:
                 # Adjust speed based on button input
                 set_motor_speed(target_speed, target_speed * 1.1)  # Speed up right motor
+                print("Left button pressed, speeding up right motor")
             else:
                 set_motor_speed(target_speed, target_speed)  # Set to target speed
+                print("No button pressed, setting to target speed")
 
         time.sleep(0.1)  # Ensure control loop runs at a reasonable rate
 
@@ -110,22 +137,27 @@ def control_loop():
     print("Robot A stopped")
 
 def run_server():
+    print("Starting Flask server")
     app.run(host='0.0.0.0', port=5000)
 
 if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Run Robot A control script.')
     parser.add_argument('--side', choices=['left', 'right'], required=True, help='Specify the side of the ramp (left or right).')
-    parser.add_argument('--ip', required=True, help='Specify the IP address of Robot A.')
+    parser.add_argument('--ip', required=True, help='Specify the IP address of Robot B.')
     args = parser.parse_args()
 
     # Set the side of the ramp and IP address
     on_left_ramp = (args.side == 'left')
-    robot_a_ip = args.ip
+    robot_b_ip = args.ip
+
+    print(f"Running with side: {args.side}, IP: {args.ip}")
 
     # Start the Flask server in a separate thread
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
-    # Start the control loop
-    control_loop()
+    # Check for start signal from Robot B
+    if check_robot_b_start_signal():
+        # Start the control loop
+        control_loop()

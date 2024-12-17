@@ -13,7 +13,7 @@ ssh pi@10.243.91.238
 cd ramp-robot
 git pull origin main
 source ~/ramp-robot-venv/bin/activate
-python3 run.py --side left --ip 10.243.91.238  <change --side and  --ip>
+python3 run.py --side left --ip 10.243.91.50  <change --side and  --ip>
 
 
 Robot B Steps:
