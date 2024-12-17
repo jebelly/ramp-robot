@@ -2,8 +2,13 @@ import requests
 from flask import Flask, request, jsonify
 import threading
 import time
+import random
 
 app = Flask(__name__)
+
+# Global variable to store the target speed
+target_speed = None
+current_speed = None  # Variable to keep track of the current speed
 
 def start_robot_b(delay):
     url = f"http://10.243.91.238:5000/start/{delay}"
@@ -27,20 +32,24 @@ def send_target_speed(speed):
 
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
+    global start_signal
     if 1 <= delay <= 10:
-        threading.Thread(target=autonomous_operation, args=(delay,)).start()
-        return jsonify({"status": "Robot started"}), 200
+        threading.Timer(delay, set_start_signal).start()
+        return jsonify({"status": "Robot B will start after delay"}), 200
     else:
         return jsonify({"error": "Invalid delay value"}), 400
 
+def set_start_signal():
+    global start_signal
+    start_signal = True
+
 @app.route('/target/<int:speed>', methods=['POST'])
 def target(speed):
+    global target_speed
     if 1 <= speed <= 1000:
-        response = send_target_speed(speed)
-        if response:
-            return jsonify({"status": "Speed set"}), 200
-        else:
-            return jsonify({"error": "Failed to set speed"}), 500
+        target_speed = speed
+        print(f"Received speed request: {target_speed}")
+        return jsonify({"status": "Speed received"}), 200
     else:
         return jsonify({"error": "Invalid speed value"}), 400
 
@@ -50,18 +59,34 @@ def receive_message():
     print(f"Received message: {data}")
     return jsonify({"status": "Message received"}), 200
 
+@app.route('/set_speed', methods=['POST'])
+def set_speed():
+    global target_speed
+    data = request.json
+    target_speed = data.get('speed')
+    print(f"Received speed request: {target_speed}")
+    return jsonify({"status": "Speed received"}), 200
+
 def autonomous_operation(delay):
+    global current_speed
     time.sleep(delay)
     print("Begin autonomous operation for Robot B")
     while True:
-        # Example autonomous operation
-        speed = 50  # Example speed value
-        response = send_target_speed(speed)
-        if response:
-            print("Speed set successfully")
+        if target_speed is not None:
+            speed = target_speed
         else:
-            print("Failed to set speed")
-        time.sleep(0.5)  # Ensure requests are not sent more frequently than 10 Hz
+            # Generate a random speed value between 1 and 1000
+            speed = random.randint(1, 1000)
+        
+        if speed != current_speed:
+            response = send_target_speed(speed)
+            if response:
+                print(f"Speed {speed} set successfully")
+                current_speed = speed
+            else:
+                print(f"Failed to set speed {speed}")
+        
+        time.sleep(2)  # Ensure requests are not sent more frequently than every 2 seconds
 
 def check_robot_a_ready():
     url = "http://10.243.91.238:5000/ready"

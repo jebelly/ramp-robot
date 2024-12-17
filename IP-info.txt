@@ -1,9 +1,0 @@
-Robot A:
-    user:   pi@10.243.91.238
-    password:   magickey
-    port:   5000
-
-Robot B:
-    user:   pi@@10.243.91.50
-    password:   Alizula333!
-    port:   5000

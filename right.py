@@ -5,6 +5,10 @@ import threading
 
 app = Flask(__name__)
 
+#---------------------------------#
+#      USE WHEN ON RIGHT RAMP!
+#---------------------------------#
+
 #  Main Control Loop for Robot A (our robot)
 
 
@@ -112,12 +116,12 @@ def control_loop():
         left_button_pressed = GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW
         right_button_pressed = GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW
 
-        if left_button_pressed:
+        if right_button_pressed:
             # Adjust speed based on button input
-            set_motor_speed(target_speed * 0.9, target_speed)  # Slow down left motor
-        elif right_button_pressed:
+            set_motor_speed(target_speed * 0.9, target_speed)  # Slow down right motor
+        elif left_button_pressed:
             # Adjust speed based on button input
-            set_motor_speed(target_speed * 1.1, target_speed)  # Speed up left motor
+            set_motor_speed(target_speed, target_speed * 1.1)  # Speed up right motor
         else:
             set_motor_speed(target_speed, target_speed)  # Set to target speed
 
