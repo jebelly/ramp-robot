@@ -34,12 +34,6 @@ GPIO.setup(LEFT_MOTOR_IN2, GPIO.OUT)
 GPIO.setup(RIGHT_MOTOR_IN3, GPIO.OUT)
 GPIO.setup(RIGHT_MOTOR_IN4, GPIO.OUT)
 
-# Initialize PWM on both IN1 and IN3 pins for speed control
-left_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN1, 1000)  # 1kHz frequency
-right_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN3, 1000)  # 1kHz frequency
-left_motor_pwm.start(0)
-right_motor_pwm.start(0)
-
 def set_motor_speed(left_speed, right_speed):
     # Scale the speed values to 0-100%
     left_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)
@@ -91,8 +85,10 @@ def control_loop():
 
     while True:
         if not start_signal:
-            set_motor_speed(0, 0)
-            print("Waiting for start signal...")
+            if current_speed != 0:
+                set_motor_speed(0, 0)
+                current_speed = 0
+                print("Motors stopped. Waiting for start signal...")
             time.sleep(0.1)
             continue
 
