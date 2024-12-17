@@ -48,26 +48,31 @@ def start():
     global start_signal
     if request.method == 'POST':
         delay = request.args.get('delay', type=int)
+        if start_signal or stop_signal:
+            return jsonify({"status": "no"}), 200
         if 1 <= delay <= 10:
             print(f"Received start request with delay: {delay}")
             threading.Timer(delay, set_start_signal).start()
-            return jsonify({"status": "Robot A will start after delay"}), 200
+            return jsonify({"status": "ok"}), 200
         else:
             print(f"Invalid start delay: {delay}")
-            return jsonify({"error": "Invalid delay value"}), 400
+            return jsonify({"status": "no"}), 400
     elif request.method == 'GET':
         return jsonify({"start_signal": start_signal}), 200
 
 @app.route('/speed/<int:speed>', methods=['POST'])
 def speed(speed):
     global target_speed
-    if 1 <= speed <= 1000:
-        target_speed = speed
-        print(f"Received target speed: {target_speed}")
-        return jsonify({"status": "Speed set"}), 200
+    if start_signal and not stop_signal:
+        if 1 <= speed <= 1000:
+            target_speed = speed
+            print(f"Received target speed: {target_speed}")
+            return jsonify({"status": "ok"}), 200
+        else:
+            print(f"Invalid target speed: {speed}")
+            return jsonify({"status": "no"}), 400
     else:
-        print(f"Invalid target speed: {speed}")
-        return jsonify({"error": "Invalid speed value"}), 400
+        return jsonify({"status": "no"}), 200
 
 def check_robot_b_start_signal():
     url = f"http://{robot_b_ip}:5000/start"
@@ -159,11 +164,11 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
+    # Start receiving speed from Robot B
+    speed_thread = threading.Thread(target=receive_speed_from_robot_b)
+    speed_thread.start()
+
     # Check for start signal from Robot B
     if check_robot_b_start_signal():
         # Start the control loop
         control_loop()
-
-    # Start receiving speed from Robot B
-    speed_thread = threading.Thread(target=receive_speed_from_robot_b)
-    speed_thread.start()

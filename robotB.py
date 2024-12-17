@@ -11,15 +11,15 @@ current_speed = None  # Variable to keep track of the current speed
 start_signal = False
 
 def start_robot_a(delay):
-    url = f"http://10.243.91.238:5000/start/{delay}"
+    url = f"http://10.243.91.238:5000/start?delay={delay}"
     while True:
         try:
             response = requests.post(url)
-            if response.status_code == 200:
+            if response.status_code == 200 and response.json().get("status") == "ok":
                 print(f"Start signal sent to Robot A with delay {delay}")
                 return True
             else:
-                print(f"Robot A is not ready, status code: {response.status_code}")
+                print(f"Robot A is not ready or already started, status: {response.json().get('status')}")
         except requests.exceptions.RequestException as e:
             print(f"Error sending start signal to Robot A: {e}")
         time.sleep(1)  # Retry every second
@@ -28,8 +28,11 @@ def send_target_speed(speed):
     url = f"http://10.243.91.238:5000/speed/{speed}"
     try:
         response = requests.post(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        return response
+        if response.status_code == 200 and response.json().get("status") == "ok":
+            return response
+        else:
+            print(f"Failed to set speed {speed}, status: {response.json().get('status')}")
+            return None
     except requests.exceptions.RequestException as e:
         print(f"Error: {e}")
         return None
@@ -78,14 +81,13 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
-    
+    # Keep trying to send start signal to Robot A until it is accepted
+    while not start_robot_a(5):
+        print("Retrying to send start signal to Robot A...")
+        time.sleep(1)
 
     # Wait for the start signal before starting autonomous operation
     while not start_signal:
-        # Keep trying to send start signal to Robot A until it is accepted
-        while not start_robot_a(5):
-            print("Retrying to send start signal to Robot A...")
-            time.sleep(1)
         time.sleep(0.1)
 
     # Start autonomous operation with a delay of 5 seconds
