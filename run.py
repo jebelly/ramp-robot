@@ -59,8 +59,8 @@ def set_start_signal():
     start_signal = True
     print("Start signal set to True")
 
-@app.route('/target/<int:speed>', methods=['POST'])
-def target(speed):
+@app.route('/speed/<int:speed>', methods=['POST'])
+def speed(speed):
     global target_speed
     if 1 <= speed <= 1000:
         target_speed = speed
@@ -69,18 +69,6 @@ def target(speed):
     else:
         print(f"Invalid target speed: {speed}")
         return jsonify({"error": "Invalid speed value"}), 400
-
-@app.route('/stop', methods=['POST'])
-def stop():
-    global stop_signal
-    stop_signal = True
-    print("Stop signal set to True")
-    return jsonify({"status": "Robot A stopped"}), 200
-
-@app.route('/ready', methods=['GET'])
-def ready():
-    print("Received ready check")
-    return jsonify({"status": "Robot A is ready"}), 200
 
 def check_robot_b_start_signal():
     url = f"http://{robot_b_ip}:5000/start"
@@ -92,6 +80,21 @@ def check_robot_b_start_signal():
                 return True
         except requests.exceptions.RequestException as e:
             print(f"Error checking Robot B start signal: {e}")
+        time.sleep(1)  # Retry every second
+
+def receive_speed_from_robot_b():
+    url = f"http://{robot_b_ip}:5000/speed"
+    while True:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                speed = response.json().get('speed')
+                if speed:
+                    global target_speed
+                    target_speed = speed
+                    print(f"Received speed from Robot B: {target_speed}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error receiving speed from Robot B: {e}")
         time.sleep(1)  # Retry every second
 
 def control_loop():
@@ -161,3 +164,7 @@ if __name__ == "__main__":
     if check_robot_b_start_signal():
         # Start the control loop
         control_loop()
+
+    # Start receiving speed from Robot B
+    speed_thread = threading.Thread(target=receive_speed_from_robot_b)
+    speed_thread.start()

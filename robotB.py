@@ -12,17 +12,20 @@ start_signal = False
 
 def start_robot_a(delay):
     url = f"http://10.243.91.238:5000/start/{delay}"
-    try:
-        response = requests.post(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Start signal sent to Robot A with delay {delay}")
-        return response
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending start signal to Robot A: {e}")
-        return None
+    while True:
+        try:
+            response = requests.post(url)
+            if response.status_code == 200:
+                print(f"Start signal sent to Robot A with delay {delay}")
+                return True
+            else:
+                print(f"Robot A is not ready, status code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending start signal to Robot A: {e}")
+        time.sleep(1)  # Retry every second
 
 def send_target_speed(speed):
-    url = f"http://10.243.91.238:5000/target/{speed}"
+    url = f"http://10.243.91.238:5000/speed/{speed}"
     try:
         response = requests.post(url)
         response.raise_for_status()  # Raise an exception for HTTP errors
@@ -62,20 +65,6 @@ def autonomous_operation(delay):
         
         time.sleep(2)  # Ensure requests are not sent more frequently than every 2 seconds
 
-def check_robot_a_ready(delay):
-    url = f"http://10.243.91.238:5000/start/{delay}"
-    try:
-        response = requests.post(url)
-        if response.status_code == 200:
-            print("Robot A is ready")
-            return True
-        else:
-            print("Robot A is not ready")
-            return False
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending start signal to Robot A: {e}")
-        return False
-
 def run_server():
     app.run(host='0.0.0.0', port=5000)
 
@@ -84,7 +73,10 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
-    # Send start signal to Robot A and check if it is ready
-    if check_robot_a_ready(5):
-        # Start autonomous operation with a delay of 5 seconds
-        autonomous_operation(5)
+    # Keep trying to send start signal to Robot A until it is accepted
+    while not start_robot_a(5):
+        print("Retrying to send start signal to Robot A...")
+        time.sleep(1)
+
+    # Start autonomous operation with a delay of 5 seconds
+    autonomous_operation(5)
