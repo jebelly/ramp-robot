@@ -48,13 +48,13 @@ GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW)
 
 def set_motor_speed(left_speed, right_speed):
     # Scale the speed values to 0-100%
-    left_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)
-    right_duty_cycle = min(max(abs(right_speed) / 10, 0), 100)
+    left_duty_cycle = min(max(abs(right_speed) / 10, 0), 100)  # Switch left and right
+    right_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)  # Switch left and right
     
-    GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
-    GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
-    GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if right_speed > 0 else GPIO.LOW)
-    GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW if right_speed > 0 else GPIO.HIGH)
+    GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if right_speed > 0 else GPIO.LOW)  # Switch left and right
+    GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if right_speed > 0 else GPIO.HIGH)  # Switch left and right
+    GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if left_speed > 0 else GPIO.LOW)  # Switch left and right
+    GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW if left_speed > 0 else GPIO.HIGH)  # Switch left and right
     
     left_motor_pwm.ChangeDutyCycle(left_duty_cycle)
     right_motor_pwm.ChangeDutyCycle(right_duty_cycle)
@@ -62,12 +62,12 @@ def set_motor_speed(left_speed, right_speed):
 def check_buttons():
     if GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW:
         print("Left button pressed! Adjusting speed to straighten tube.")
-        set_motor_speed(target_speed - 200, target_speed + 200)
+        set_motor_speed(target_speed + 200, target_speed - 200)  # Switch left and right
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
     elif GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW:
         print("Right button pressed! Adjusting speed to straighten tube.")
-        set_motor_speed(target_speed + 200, target_speed - 200)
+        set_motor_speed(target_speed - 200, target_speed + 200)  # Switch left and right
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
 
