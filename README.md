@@ -6,14 +6,14 @@ Steps:
 1. SSH into Robot A's pi
 2. source ~/ramp-robot-venv/bin/activate
 3. cd /ramp-robot
-4. python3 run.py
+python3 run.py --side left --ip 10.243.91.238
 5. 
 
 ssh pi@10.243.91.238
 cd ramp-robot
 git pull origin main
 source ~/ramp-robot-venv/bin/activate
-python3 left.py OR right.py depending on which ramp
+python3 run.py --side left --ip 10.243.91.238  <change --side and  --ip>
 
 
 Robot B Steps:

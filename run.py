@@ -2,23 +2,29 @@ import RPi.GPIO as GPIO
 import time
 from flask import Flask, request, jsonify
 import threading
+import argparse
 
 app = Flask(__name__)
 
-# GPIO setup
-GPIO.setmode(GPIO.BOARD)
+# Global variables to store the target speed, start signal, stop signal, and IP address
+target_speed = 0
+start_signal = False
+stop_signal = False
+on_left_ramp = None  # Variable to store the side of the ramp
+robot_a_ip = None  # Variable to store the IP address of Robot A
 
 # Define GPIO pins
-LEFT_BUTTON_PIN = 36 # GPIO pin for left button
-RIGHT_BUTTON_PIN = 32 # GPIO pin for right button
+LEFT_BUTTON_PIN = 36  # GPIO pin for left button
+RIGHT_BUTTON_PIN = 32  # GPIO pin for right button
 LEFT_MOTOR_IN1 = 15  # GPIO pin for IN1 (Left Motor)
 LEFT_MOTOR_IN2 = 16  # GPIO pin for IN2 (Left Motor)
 RIGHT_MOTOR_IN3 = 12  # GPIO pin for IN3 (Right Motor)
 RIGHT_MOTOR_IN4 = 11  # GPIO pin for IN4 (Right Motor)
 
 # Setup button pins
-GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # zero when pressed
-GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # zero when pressed
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # zero when pressed
+GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # zero when pressed
 
 # Setup motor pins
 GPIO.setup(LEFT_MOTOR_IN1, GPIO.OUT)
@@ -35,12 +41,6 @@ def set_motor_speed(left_speed, right_speed):
     # Assuming speed is controlled by duty cycle, adjust accordingly
     # left_motor_pwm.ChangeDutyCycle(abs(left_speed))
     # right_motor_pwm.ChangeDutyCycle(abs(right_speed))
-
-# Global variables to store the target speed, start signal, stop signal, and ramp side
-target_speed = 0
-start_signal = False
-stop_signal = False
-on_left_ramp = True
 
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
@@ -74,18 +74,6 @@ def stop():
 def ready():
     return jsonify({"status": "Robot A is ready"}), 200
 
-@app.route('/ramp/<string:side>', methods=['POST'])
-def ramp(side):
-    global on_left_ramp
-    if side.lower() == 'left':
-        on_left_ramp = True
-        return jsonify({"status": "Robot A set to left ramp"}), 200
-    elif side.lower() == 'right':
-        on_left_ramp = False
-        return jsonify({"status": "Robot A set to right ramp"}), 200
-    else:
-        return jsonify({"error": "Invalid ramp side"}), 400
-
 def control_loop():
     global start_signal, stop_signal, target_speed, on_left_ramp
     while not start_signal:
@@ -98,16 +86,20 @@ def control_loop():
 
         if on_left_ramp:
             if left_button_pressed:
-                set_motor_speed(target_speed, target_speed * 1.1)  # Speed up right motor
+                # Adjust speed based on button input
+                set_motor_speed(target_speed * 0.9, target_speed)  # Slow down left motor
             elif right_button_pressed:
-                set_motor_speed(target_speed, target_speed * 0.9)  # Slow down right motor
+                # Adjust speed based on button input
+                set_motor_speed(target_speed * 1.1, target_speed)  # Speed up left motor
             else:
                 set_motor_speed(target_speed, target_speed)  # Set to target speed
         else:
-            if left_button_pressed:
-                set_motor_speed(target_speed * 0.9, target_speed)  # Slow down left motor
-            elif right_button_pressed:
-                set_motor_speed(target_speed * 1.1, target_speed)  # Speed up left motor
+            if right_button_pressed:
+                # Adjust speed based on button input
+                set_motor_speed(target_speed * 0.9, target_speed)  # Slow down right motor
+            elif left_button_pressed:
+                # Adjust speed based on button input
+                set_motor_speed(target_speed, target_speed * 1.1)  # Speed up right motor
             else:
                 set_motor_speed(target_speed, target_speed)  # Set to target speed
 
@@ -121,6 +113,16 @@ def run_server():
     app.run(host='0.0.0.0', port=5000)
 
 if __name__ == "__main__":
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='Run Robot A control script.')
+    parser.add_argument('--side', choices=['left', 'right'], required=True, help='Specify the side of the ramp (left or right).')
+    parser.add_argument('--ip', required=True, help='Specify the IP address of Robot A.')
+    args = parser.parse_args()
+
+    # Set the side of the ramp and IP address
+    on_left_ramp = (args.side == 'left')
+    robot_a_ip = args.ip
+
     # Start the Flask server in a separate thread
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
