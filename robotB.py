@@ -15,6 +15,7 @@ def start_robot_a(delay):
     try:
         response = requests.post(url)
         response.raise_for_status()  # Raise an exception for HTTP errors
+        print(f"Start signal sent to Robot A with delay {delay}")
         return response
     except requests.exceptions.RequestException as e:
         print(f"Error sending start signal to Robot A: {e}")
