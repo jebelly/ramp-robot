@@ -87,7 +87,7 @@ def speed(speed):
         return jsonify({"error": "Invalid speed value"}), 400
 
 def control_loop():
-    global target_speed
+    global target_speed, start_signal
     current_speed = 0
     acceleration = 10  # Adjust this value to control the acceleration rate
 
