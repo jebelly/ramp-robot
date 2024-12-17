@@ -48,9 +48,14 @@ def set_start_signal():
     start_signal = True
 
 def autonomous_operation(delay):
-    global current_speed
+    global current_speed, start_signal
     time.sleep(delay)
     print("Begin autonomous operation for Robot B")
+    
+    # Wait for the start signal
+    while not start_signal:
+        time.sleep(0.1)
+    
     while True:
         # Generate a random speed value between 1 and 1000
         speed = random.randint(1, 1000)
