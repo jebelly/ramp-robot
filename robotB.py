@@ -6,18 +6,19 @@ import random
 
 app = Flask(__name__)
 
-# Global variable to store the target speed
+# Global variables to store the target speed and start signal
 target_speed = None
 current_speed = None  # Variable to keep track of the current speed
+start_signal = False
 
-def start_robot_b(delay):
+def start_robot_a(delay):
     url = f"http://10.243.91.238:5000/start/{delay}"
     try:
         response = requests.post(url)
         response.raise_for_status()  # Raise an exception for HTTP errors
         return response
     except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
+        print(f"Error sending start signal to Robot A: {e}")
         return None
 
 def send_target_speed(speed):
@@ -110,5 +111,7 @@ if __name__ == "__main__":
 
     # Check if Robot A is ready
     if check_robot_a_ready():
+        # Send start signal to Robot A with a delay of 5 seconds
+        start_robot_a(5)
         # Start autonomous operation with a delay of 5 seconds
         autonomous_operation(5)
