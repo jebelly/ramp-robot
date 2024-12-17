@@ -62,17 +62,19 @@ def autonomous_operation(delay):
         
         time.sleep(2)  # Ensure requests are not sent more frequently than every 2 seconds
 
-def check_robot_a_ready():
-    url = "http://10.243.91.238:5000/ready"
-    while True:
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                print("Robot A is ready")
-                return True
-        except requests.exceptions.RequestException as e:
-            print(f"Error checking Robot A readiness: {e}")
-        time.sleep(1)  # Retry every second
+def check_robot_a_ready(delay):
+    url = f"http://10.243.91.238:5000/start/{delay}"
+    try:
+        response = requests.post(url)
+        if response.status_code == 200:
+            print("Robot A is ready")
+            return True
+        else:
+            print("Robot A is not ready")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending start signal to Robot A: {e}")
+        return False
 
 def run_server():
     app.run(host='0.0.0.0', port=5000)
@@ -82,9 +84,7 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=run_server)
     server_thread.start()
 
-    # Check if Robot A is ready
-    if check_robot_a_ready():
-        # Send start signal to Robot A with a delay of 5 seconds
-        start_robot_a(5)
+    # Send start signal to Robot A and check if it is ready
+    if check_robot_a_ready(5):
         # Start autonomous operation with a delay of 5 seconds
         autonomous_operation(5)
