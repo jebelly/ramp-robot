@@ -41,14 +41,14 @@ left_motor_pwm.start(0)
 right_motor_pwm.start(0)
 
 def set_motor_speed(left_speed, right_speed):
-    # Scale the speed values to 0-50%
-    left_duty_cycle = min(max(left_speed / 20, 0), 50)
-    right_duty_cycle = min(max(right_speed / 20, 0), 50)
+    # Scale the speed values to 0-100%
+    left_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)
+    right_duty_cycle = min(max(abs(right_speed) / 10, 0), 100)
     
-    GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
-    GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
-    GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if right_speed > 0 else GPIO.LOW)
-    GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW if right_speed > 0 else GPIO.HIGH)
+    GPIO.output(LEFT_MOTOR_IN1, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
+    GPIO.output(LEFT_MOTOR_IN2, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
+    GPIO.output(RIGHT_MOTOR_IN3, GPIO.LOW if right_speed > 0 else GPIO.HIGH)
+    GPIO.output(RIGHT_MOTOR_IN4, GPIO.HIGH if right_speed > 0 else GPIO.LOW)
     
     left_motor_pwm.ChangeDutyCycle(left_duty_cycle)
     right_motor_pwm.ChangeDutyCycle(right_duty_cycle)
@@ -102,7 +102,7 @@ def control_loop():
                 if current_speed < target_speed:
                     current_speed = target_speed
 
-            set_motor_speed(current_speed, current_speed * 1.1)  # Speed up right motor
+            set_motor_speed(current_speed, current_speed)  # Set both motors to the same speed
             print(f"Setting motor speed to {current_speed}")
         else:
             set_motor_speed(0, 0)

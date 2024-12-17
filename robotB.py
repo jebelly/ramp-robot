@@ -30,15 +30,16 @@ def send_target_speed(speed):
     for attempt in range(retries):
         try:
             response = requests.post(url)
-            if response.status_code == 200:
+            if response.status_code == 200 and response.json().get("status") == "ok":
                 print(f"Speed set to {speed}")
-                return
+                return True
             else:
-                print(f"Failed to set speed {speed}, status code: {response.status_code}")
+                print(f"Failed to set speed {speed}, status: {response.json().get('status')}")
         except requests.exceptions.RequestException as e:
             print(f"Error setting speed to {speed}: {e}")
         time.sleep(1)  # Retry after 1 second
     print(f"Failed to set speed {speed} after {retries} attempts")
+    return False
 
 @app.route('/start/<int:delay>', methods=['POST'])
 def start(delay):
