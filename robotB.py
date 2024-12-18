@@ -25,7 +25,7 @@ def start_robot_a(delay):
         time.sleep(1)  # Retry every second
 
 def send_target_speed(speed):
-    url = f"http://10.243.91.238:5000/speed/{speed}"
+    url = f"http://10.243.91.238:5000/target/{speed}"
     retries = 5
     for attempt in range(retries):
         try:

@@ -99,7 +99,7 @@ def start(delay):
     print("Start signal set to True")
     return jsonify({"status": "ok"}), 200
 
-@app.route('/speed/<int:speed>', methods=['POST'])
+@app.route('/target/<int:speed>', methods=['POST'])
 def speed(speed):
     global target_speed
     if 1 <= speed <= 1000:
