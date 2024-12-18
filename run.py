@@ -37,14 +37,16 @@ GPIO.setup(RIGHT_MOTOR_IN4, GPIO.OUT)
 # Initialize PWM on both IN1 and IN3 pins for speed control
 left_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN1, 1000)  # 1kHz frequency
 right_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN3, 1000)  # 1kHz frequency
+left2_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN2, 1000)  # 1kHz frequency
+right2_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN4, 1000)  # 1kHz frequency
+
 
 # Start PWM with 0 duty cycle to ensure motors are off
 left_motor_pwm.start(0)
 right_motor_pwm.start(0)
+left2_motor_pwm.start(0)
+right2_motor_pwm.start(0)
 
-# Set the other two unused IN pins to LOW
-GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW)
-GPIO.output(RIGHT_MOTOR_IN4, GPIO.LOW)
 
 def set_motor_speed(left_speed, right_speed):
     # Scale the speed values to 0-100%
@@ -62,12 +64,12 @@ def set_motor_speed(left_speed, right_speed):
 def check_buttons():
     if GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW:
         print("Left button pressed! Adjusting speed to straighten tube.")
-        set_motor_speed(target_speed + 200, target_speed - 200)  # Switch left and right
+        set_motor_speed(target_speed - 200, target_speed + 200)  # Switch left and right
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
     elif GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW:
         print("Right button pressed! Adjusting speed to straighten tube.")
-        set_motor_speed(target_speed - 200, target_speed + 200)  # Switch left and right
+        set_motor_speed(target_speed + 200, target_speed - 200)  # Switch left and right
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
 
