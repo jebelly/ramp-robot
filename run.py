@@ -121,6 +121,11 @@ def control_loop():
     current_speed = 0
     acceleration = 10  # Adjust this value to control the acceleration rate
 
+    if current_speed != 0:
+        set_motor_speed(0, 0)
+        current_speed = 0
+        print("Motors stopped. Waiting for start signal...")
+        
     while True:
         if not start_signal:
             if current_speed != 0:
