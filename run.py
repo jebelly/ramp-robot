@@ -53,17 +53,16 @@ def set_motor_speed(left_speed, right_speed):
     min_duty_cycle = 30
     max_duty_cycle = 80
 
-    global left_duty_cycle, right_duty_cycle
+    global left_duty_cycle
+    global right_duty_cycle
     
-    left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
-    right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
+    if left_speed > 0:
+        left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
+    if right_speed > 0:
+        right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
     
     # if speed is zero then stop the motor
-    if left_speed == 0:
-        left_duty_cycle = 0
-    if right_speed == 0:
-        right_duty_cycle = 0
-    
+
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if right_speed > 0 else GPIO.LOW)  # Switch left and right
     GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if right_speed > 0 else GPIO.HIGH)  # Switch left and right
     GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if left_speed > 0 else GPIO.LOW)  # Switch left and right
@@ -125,7 +124,7 @@ def control_loop():
         set_motor_speed(0, 0)
         current_speed = 0
         print("Motors stopped. Waiting for start signal...")
-        
+
     while True:
         if not start_signal:
             if current_speed != 0:
