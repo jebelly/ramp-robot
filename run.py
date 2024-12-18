@@ -49,18 +49,13 @@ right2_motor_pwm.start(0)
 
 
 def set_motor_speed(left_speed, right_speed):
-    # Scale the speed values to 30-80%
-    min_duty_cycle = 30
-    max_duty_cycle = 80
 
-    global left_duty_cycle
-    global right_duty_cycle
+    global left_duty_cycle, right_duty_cycle
+
+    left_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)  # Increased duty cycle
+    right_duty_cycle = min(max(abs(right_speed) / 10, 0), 100)  # Increased duty cycle
     
-    if left_speed > 0:
-        left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
-    if right_speed > 0:
-        right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
-    
+
     # if speed is zero then stop the motor
 
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if right_speed > 0 else GPIO.LOW)  # Switch left and right
