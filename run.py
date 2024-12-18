@@ -52,8 +52,14 @@ def set_motor_speed(left_speed, right_speed):
     # Scale the speed values to 30-80%
     min_duty_cycle = 30
     max_duty_cycle = 80
-    left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
-    right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
+
+    # if speed is zero then stop the motor
+    if left_speed == 0:
+        left_motor_pwm.ChangeDutyCycle(0)
+        left2_motor_pwm.ChangeDutyCycle(0)
+    else:
+        left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
+        right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
     
     print(f"Setting left motor speed to {left_speed} (duty cycle: {left_duty_cycle}%)")
     print(f"Setting right motor speed to {right_speed} (duty cycle: {right_duty_cycle}%)")
