@@ -60,8 +60,7 @@ def autonomous_operation(delay):
     print("Begin autonomous operation for Robot B")
     while True:
         # Generate a random speed value between 1 and 1000
-        speed = random.randint(1, 1000)
-        
+        speed = 600
         if speed != current_speed:
             response = send_target_speed(speed)
             if response:
