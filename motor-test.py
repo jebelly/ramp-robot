@@ -1,19 +1,25 @@
 import RPi.GPIO as GPIO
 import time
 
-# Define GPIO pins
-LEFT_MOTOR_IN1 = 15
-LEFT_MOTOR_IN2 = 16
-RIGHT_MOTOR_IN3 = 12
-RIGHT_MOTOR_IN4 = 11
 
-# Setup GPIO
 
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(LEFT_MOTOR_IN1, GPIO.OUT)
-GPIO.setup(LEFT_MOTOR_IN2, GPIO.OUT)
-GPIO.setup(RIGHT_MOTOR_IN3, GPIO.OUT)
-GPIO.setup(RIGHT_MOTOR_IN4, GPIO.OUT)
+try:
+    # Define GPIO pins
+    LEFT_MOTOR_IN1 = 15
+    LEFT_MOTOR_IN2 = 16
+    RIGHT_MOTOR_IN3 = 12
+    RIGHT_MOTOR_IN4 = 11
+    
+    # Setup GPIO
+    GPIO.setmode(GPIO.BOARD)
+    
+    left_motor_pwm = GPIO.PWM(LEFT_MOTOR_IN1, 1000)  # 1kHz frequency
+    right_motor_pwm = GPIO.PWM(RIGHT_MOTOR_IN3, 1000)  # 1kHz frequency
+
+    # Start PWM with 0 duty cycle to ensure motors are off
+    left_motor_pwm.start(0)
+    right_motor_pwm.start(0)
+
 
 # Function to set motor direction and speed
 def set_motor_speed(left_speed, right_speed):
@@ -30,5 +36,6 @@ try:
     print("Setting motors to backward")
     set_motor_speed(-1, -1)
     time.sleep(2)
+    
 finally:
     GPIO.cleanup()
