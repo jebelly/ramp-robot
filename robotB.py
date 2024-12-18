@@ -60,7 +60,7 @@ def autonomous_operation(delay):
     print("Begin autonomous operation for Robot B")
     while True:
         # Generate a random speed value between 1 and 1000
-        speed = 600
+        speed = random.randint(1, 1000)
         if speed != current_speed:
             response = send_target_speed(speed)
             if response:
@@ -69,7 +69,7 @@ def autonomous_operation(delay):
             else:
                 print(f"Failed to set speed {speed}")
         
-        time.sleep(5)  # Ensure requests are not sent more frequently than every 5 seconds
+        time.sleep(20)  # Ensure requests are not sent more frequently than every 5 seconds
 
 def run_server():
     app.run(host='0.0.0.0', port=5000)
