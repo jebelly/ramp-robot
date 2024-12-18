@@ -24,8 +24,8 @@ right_motor_pwm.start(0)
 
 # Function to set motor direction and speed
 def set_motor_speed(left_speed, right_speed):
-    left_duty_cycle = min(max(left_speed / 20, 0), 50)
-    right_duty_cycle = min(max(right_speed / 20, 0), 50)
+    left_duty_cycle = min(max(abs(left_speed) / 20, 0), 50)
+    right_duty_cycle = min(max(abs(right_speed) / 20, 0), 50)
     
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if left_speed > 0 else GPIO.LOW)
     GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if left_speed > 0 else GPIO.HIGH)
@@ -38,10 +38,10 @@ def set_motor_speed(left_speed, right_speed):
 # Test motors
 try:
     print("Setting motors to forward")
-    set_motor_speed(1, 1)
+    set_motor_speed(20, 20)  # Use a higher speed value for testing
     time.sleep(2)
     print("Setting motors to backward")
-    set_motor_speed(-1, -1)
+    set_motor_speed(-20, -20)  # Use a higher speed value for testing
     time.sleep(2)
 finally:
     print("Stopping motors and cleaning up GPIO")
