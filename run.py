@@ -60,9 +60,10 @@ def set_motor_speed(left_speed, right_speed):
     
     # if speed is zero then stop the motor
     if left_speed == 0:
-        left_motor_pwm.ChangeDutyCycle(0)
-        left2_motor_pwm.ChangeDutyCycle(0)
-
+        left_duty_cycle = 0
+    if right_speed == 0:
+        right_duty_cycle = 0
+    
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if right_speed > 0 else GPIO.LOW)  # Switch left and right
     GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if right_speed > 0 else GPIO.HIGH)  # Switch left and right
     GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if left_speed > 0 else GPIO.LOW)  # Switch left and right
