@@ -61,9 +61,8 @@ def set_motor_speed(left_speed, right_speed):
         left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
         right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
     
-    print(f"Setting left motor speed to {left_speed} (duty cycle: {left_duty_cycle}%)")
-    print(f"Setting right motor speed to {right_speed} (duty cycle: {right_duty_cycle}%)")
-    
+
+
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if right_speed > 0 else GPIO.LOW)  # Switch left and right
     GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if right_speed > 0 else GPIO.HIGH)  # Switch left and right
     GPIO.output(RIGHT_MOTOR_IN3, GPIO.HIGH if left_speed > 0 else GPIO.LOW)  # Switch left and right
