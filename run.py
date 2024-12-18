@@ -49,9 +49,14 @@ right2_motor_pwm.start(0)
 
 
 def set_motor_speed(left_speed, right_speed):
-    # Scale the speed values to 0-100%
-    left_duty_cycle = min(max(abs(right_speed) / 10, 0), 100)  # Switch left and right
-    right_duty_cycle = min(max(abs(left_speed) / 10, 0), 100)  # Switch left and right
+    # Scale the speed values to 30-80%
+    min_duty_cycle = 30
+    max_duty_cycle = 80
+    left_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(right_speed) / 1000, 0), 1)
+    right_duty_cycle = min_duty_cycle + (max_duty_cycle - min_duty_cycle) * min(max(abs(left_speed) / 1000, 0), 1)
+    
+    print(f"Setting left motor speed to {left_speed} (duty cycle: {left_duty_cycle}%)")
+    print(f"Setting right motor speed to {right_speed} (duty cycle: {right_duty_cycle}%)")
     
     GPIO.output(LEFT_MOTOR_IN1, GPIO.HIGH if right_speed > 0 else GPIO.LOW)  # Switch left and right
     GPIO.output(LEFT_MOTOR_IN2, GPIO.LOW if right_speed > 0 else GPIO.HIGH)  # Switch left and right
@@ -62,14 +67,15 @@ def set_motor_speed(left_speed, right_speed):
     right_motor_pwm.ChangeDutyCycle(right_duty_cycle)
 
 def check_buttons():
+    adjustment = 50  # Smaller adjustment value
     if GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW:
         print("Left button pressed! Adjusting speed to straighten tube.")
-        set_motor_speed(target_speed - 200, target_speed + 200)  # Switch left and right
+        set_motor_speed(target_speed - adjustment, target_speed + adjustment)  # Switch left and right
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
     elif GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW:
         print("Right button pressed! Adjusting speed to straighten tube.")
-        set_motor_speed(target_speed + 200, target_speed - 200)  # Switch left and right
+        set_motor_speed(target_speed + adjustment, target_speed - adjustment)  # Switch left and right
         time.sleep(0.5)  # Adjust the duration as needed
         set_motor_speed(target_speed, target_speed)
 
